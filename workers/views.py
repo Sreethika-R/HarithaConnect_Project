@@ -2,6 +2,7 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth import authenticate, login, logout
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages
+from django.db import transaction
 from django.utils import timezone
 from .models import WorkerProfile, CollectionAssignment, WorkerComplaint
 from .forms import CollectionUpdateForm, WorkerComplaintForm
@@ -203,15 +204,16 @@ def confirm_offline_payment(request):
         payment_id = request.POST.get('payment_id')
 
         try:
-            payment = get_object_or_404(Payment, id=payment_id)
+            with transaction.atomic():
+                payment = Payment.objects.select_for_update().get(id=payment_id)
 
-            if not payment.is_paid_online and payment.worker_who_received_cash is None:
-                payment.worker_who_received_cash = worker_profile
-                payment.save()
+                if not payment.is_paid_online and payment.worker_who_received_cash is None:
+                    payment.worker_who_received_cash = worker_profile
+                    payment.save()
 
-                messages.success(request, f"Confirmed cash payment of ₹{payment.amount} from Household {payment.resident.household_id}.")
-            else:
-                messages.error(request, "This payment is already confirmed.")
+                    messages.success(request, f"Confirmed cash payment of ₹{payment.amount} from Household {payment.resident.household_id}.")
+                else:
+                    messages.error(request, "This payment is already confirmed.")
 
         except Payment.DoesNotExist:
             messages.error(request, "Payment record not found.")

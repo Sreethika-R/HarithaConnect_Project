@@ -1,7 +1,9 @@
 # Virtual Environment
 venv/
+.venv/
 env/
 ENV/
+media/
 
 # Python Cache Files
 __pycache__/

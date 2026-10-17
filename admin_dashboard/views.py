@@ -2,8 +2,8 @@ from django.shortcuts import render, redirect, get_object_or_404
 from django.contrib.auth.decorators import login_required, user_passes_test
 from django.contrib import messages 
 from django.utils import timezone
+from django.urls import reverse
 from django.db import models as db_models
-from django.contrib.auth.models import User
 from django.contrib.auth import authenticate, login
 from datetime import timedelta, date
 from decimal import Decimal
@@ -237,7 +237,7 @@ def assign_daily_task(request):
             messages.error(request, f"Error: No HKS team assigned to Ward {ward_id}. Please assign a team first.")
             return redirect('assign_daily_task')
 
-        # Task Creation Logic (Simplified Mock)
+        # These mock household IDs create placeholder cover tasks, not actual resident assignments.
         mock_household_ids = [f"{ward_id}-COVER-H{i}" for i in range(5)]
         tasks_to_create = []
 
@@ -254,7 +254,7 @@ def assign_daily_task(request):
         created_tasks = CollectionAssignment.objects.bulk_create(tasks_to_create, ignore_conflicts=True)
         tasks_created = len(created_tasks)
         
-        messages.success(request, f"Assigned {tasks_created} quick tasks to the team in {ward_id} for {target_date}.")
+        messages.success(request, f"Assigned {tasks_created} placeholder cover tasks to the team in {ward_id} for {target_date}.")
         return redirect('admin_monitoring_dashboard')
 
 
@@ -342,7 +342,7 @@ def unconfirmed_payments_manager(request):
         payment = get_object_or_404(Payment, id=payment_id)
 
         if action == 'ALERT_WORKER':
-            messages.success(request, f"ALERT SENT! Notification triggered for responsible worker to confirm payment #{payment_id}.")
+            messages.success(request, f"Follow-up flagged for payment #{payment_id} (no notification is sent by this system yet).")
             
             # Note: We do NOT redirect here yet, we let the outer block handle it.
             
@@ -355,7 +355,6 @@ def unconfirmed_payments_manager(request):
     }
     return render(request, 'admin_dashboard/unconfirmed_payments.html', context)
 
-from django.contrib.auth.models import User
 @login_required(login_url='admin_login')
 @user_passes_test(is_superuser, login_url='admin_login')
 def overdue_bills_manager(request):
@@ -373,7 +372,7 @@ def overdue_bills_manager(request):
         bill = get_object_or_404(BillingDue, id=bill_id)
         
         if action == 'ALERT_RESIDENT':
-            messages.warning(request, f"Overdue alert sent to Resident {bill.resident.household_id}.")
+            messages.warning(request, f"Follow-up flagged for overdue bill #{bill_id} for Resident {bill.resident.household_id} (no notification is sent by this system yet).")
             return redirect('overdue_bills_manager')
 
     context = {
